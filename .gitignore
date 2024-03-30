@@ -6,3 +6,4 @@ about.txt
 main.spec
 pyvenv.cfg
 /Services/scraper_old.py
+.gitignore
