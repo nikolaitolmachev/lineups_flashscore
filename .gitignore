@@ -1,9 +1,0 @@
-# created by virtualenv automatically
-/.idea/
-/Lib/
-/Scripts/
-about.txt
-main.spec
-pyvenv.cfg
-/Services/scraper_old.py
-.gitignore
