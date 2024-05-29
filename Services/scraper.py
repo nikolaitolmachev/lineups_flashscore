@@ -123,8 +123,10 @@ class Scraper:
         players = []
         for row in element:
             try:
-                name = str(row.find_element_by_xpath('./a').text)
-                url = row.find_element_by_xpath('./a').get_attribute('href')
+                name = str(row.find_element_by_xpath('.//a').text)
+                url = row.find_element_by_xpath('.//a').get_attribute('href')
+                if url[-1] != '/':
+                    url += '/'
                 name = name.replace('(G)', '').replace('(C)', '').replace('(A)', '').strip()
                 if name[-1] == '.':
                     name = name[:-1]
