@@ -125,13 +125,20 @@ class Scraper:
             try:
                 name = str(row.find_element_by_xpath('.//a').text)
                 url = row.find_element_by_xpath('.//a').get_attribute('href')
-                if url[-1] != '/':
-                    url += '/'
+
                 name = name.replace('(G)', '').replace('(C)', '').replace('(A)', '').strip()
                 if name[-1] == '.':
                     name = name[:-1]
-                player = Player(name, url, None, None, None, None, None, None)
-                players.append(player)
+
+                try:
+                    if url[-1] != '/':
+                        url += '/'
+                except IndexError:
+                    players.append(name)
+                else:
+                    player = Player(name, url, None, None, None, None, None, None)
+                    players.append(player)
+
             except NoSuchElementException:
                 try:
                     name = str(row.find_element_by_xpath('./div[3]').text).replace('(G)', '')\
