@@ -27,11 +27,18 @@ class Scraper:
         options.add_argument("window-size=1920,1080")
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
+        # options.add_argument("--headless=new")
+        # for 129 version to fix a bug
+        options.add_argument("--headless=old")
+
         # get a path of ChromeDriver from
         config = configparser.ConfigParser()
-        #config.read('../settings.ini')
-        config.read('settings.ini')
-        path_for_driver = config['COMMON']['SELENIUM_DRIVER_PATH']
+        try:
+            config.read('settings.ini')
+        except:
+            config.read('../settings.ini')
+        finally:
+            path_for_driver = config['COMMON']['SELENIUM_DRIVER_PATH']
 
         return webdriver.Chrome(executable_path=path_for_driver, options=options)
 
