@@ -102,7 +102,7 @@ class Ui_MainWindow(object):
     def __do_lineup(self, team: Team, sport: Sport, tableWidget: QtWidgets.QTableWidget, label: QtWidgets.QLabel):
 
         def get_nationality_for_image(nationality: str):
-            if len(nationality.split(' ')) == 0:
+            if not len(nationality.split(' ')):
                 return nationality.lower()
             else:
                 return nationality.replace(' ', '-').lower()
@@ -116,7 +116,7 @@ class Ui_MainWindow(object):
         # set rows
         count_rows = len(team.players) + 1
         index_new_players = count_rows
-        if len(team.new_players) != 0:
+        if len(team.new_players):
             count_rows += len(team.new_players) + 2
         index_empty_row_best_players = consts.INTERFACE_THE_BEST_PLAYERS_COUNT_FOOTBALL if sport == Sport.football \
                                         else consts.INTERFACE_THE_BEST_PLAYERS_COUNT_HOCKEY
@@ -157,7 +157,7 @@ class Ui_MainWindow(object):
             if j == index_empty_row_best_players:
                 j += 1
             for i in range(0, COUNT_COLUMN):
-                if i == 0:
+                if not i:
                     value = player.number if player.number != None else ''
                 elif i == 1:
                     tableWidget.setCellWidget(j, i, QtWidgets.QLabel(f'<a href="{player.url}">{player.name}</a>',
@@ -258,8 +258,8 @@ class Ui_MainWindow(object):
                 msg.setWindowIcon(QtGui.QIcon('Flags/icon_1.ico'))
                 msg.exec_()
             else:
-                if match == None or (len(match.team_a.players) == 0 and len(match.team_b.players) == 0):
-                    if match == None:
+                if match is None or not (len(match.team_a.players) or len(match.team_b.players)):
+                    if match is None:
                         message = consts.ERROR_WRONG_SPORT
                     else:
                         message = consts.ERROR_LINEUPS_NOT_READY

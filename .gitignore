@@ -1,0 +1,6 @@
+.idea
+pyvenv.cfg
+Scripts
+Lib
+about.txt
+main.spec

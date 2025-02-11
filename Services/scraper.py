@@ -25,19 +25,18 @@ class Scraper:
         options.headless = True
         options.add_argument(consts.USER_AGENT_FULL)
         options.add_argument("window-size=1920,1080")
+        options.add_argument('--log-level=3')
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
-        # options.add_argument("--headless=new")
-        # for 129 version to fix a bug
-        options.add_argument("--headless=old")
+        options.add_argument("--headless=new")
 
         # get a path of ChromeDriver from
         config = configparser.ConfigParser()
         try:
             config.read('settings.ini')
+            path_for_driver = config['COMMON']['SELENIUM_DRIVER_PATH']
         except:
             config.read('../settings.ini')
-        finally:
             path_for_driver = config['COMMON']['SELENIUM_DRIVER_PATH']
 
         return webdriver.Chrome(executable_path=path_for_driver, options=options)
@@ -80,7 +79,7 @@ class Scraper:
         boxes_lineups = driver.find_elements_by_xpath('//div[@class="lf__lineUp"]/div[@class="section"]')
 
         # if lineups are ready
-        if len(boxes_lineups) != 0:
+        if len(boxes_lineups):
             # get a URLs of teams
             url_team_a = driver.find_element_by_xpath('//div[@class="duelParticipant"]/div[2]/a').get_attribute('href')
             url_team_b = driver.find_element_by_xpath('//div[@class="duelParticipant"]/div[4]/a').get_attribute('href')
@@ -221,7 +220,7 @@ class Scraper:
 
         for lm in last_matches:
             url_lm = lm.get_attribute('id').split('_')[-1]
-            if url_lm == '':
+            if not url_lm:
                 continue
             else:
                 url_lm = consts.FLASHSCORE_MAIN + lm.get_attribute('id').split('_')[-1] + '/#' \
