@@ -95,7 +95,7 @@ class Player:
         self._info_squad_last_match = squad
 
     def __str__(self):
-        if self._number != None:
+        if self._number is not None:
             return f'{self._number}\t{self._name}\t\t{self._position.value}\t{self._age}\t{self._nationality}\t' \
                f'{self._matches_played}\t{self.__goals_scored}'
         else:
@@ -142,7 +142,7 @@ class IHGoalkeeper(Player):
         return self.__so
 
     def __str__(self):
-        if self.number != None:
+        if self.number is not None:
             return f'{self._number}\t{self._name}\t\t{self._position.value}\t{self._age}\t{self._nationality}\t' \
                    f'{self._matches_played}\t{self.__sv}\t{self.__gaa}\t{self.__so}'
         else:

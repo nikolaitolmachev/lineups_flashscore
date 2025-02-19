@@ -68,7 +68,6 @@ class Scraper:
             sport = Sport.hockey
         # finishes if not football or hockey
         else:
-            driver.close()
             driver.quit()
             return None
 
@@ -79,7 +78,7 @@ class Scraper:
         boxes_lineups = driver.find_elements_by_xpath('//div[@class="lf__lineUp"]/div[@class="section"]')
 
         # if lineups are ready
-        if len(boxes_lineups):
+        if boxes_lineups:
             # get a URLs of teams
             url_team_a = driver.find_element_by_xpath('//div[@class="duelParticipant"]/div[2]/a').get_attribute('href')
             url_team_b = driver.find_element_by_xpath('//div[@class="duelParticipant"]/div[4]/a').get_attribute('href')
@@ -112,7 +111,6 @@ class Scraper:
             team_b_name = driver.find_element_by_xpath('//div[@class="duelParticipant"]/div[4]/div[3]').text
             match = Match(sport, url, tournament_name, Team(team_a_name, None, None), Team(team_b_name, None, None))
 
-        driver.close()
         driver.quit()
 
         return match
@@ -226,13 +224,12 @@ class Scraper:
                 url_lm = consts.FLASHSCORE_MAIN + lm.get_attribute('id').split('_')[-1] + '/#' \
                          + consts.FLASHSCORE_SUFFIX_FOR_LINEUPS
                 last_match_players = Scraper.__get_lineup_for_team(url_lm, team_name)
-                if last_match_players != None:
+                if last_match_players is not None:
                     break
 
-        driver.close()
         driver.quit()
 
-        if last_match_players == None:
+        if last_match_players is None:
             # no information about lineup of last match
             last_match_players = ([], [])
 
@@ -281,7 +278,6 @@ class Scraper:
         except NoSuchElementException:
             return None
         finally:
-            driver.close()
             driver.quit()
 
     @staticmethod
@@ -431,7 +427,6 @@ class Scraper:
                     player = Player(pl_name, pl_url, nationality, number, age, pl_position, matches_played, goals_scored)
                     team.add_player(player)
 
-        driver.close()
         driver.quit()
 
         return team
@@ -453,7 +448,6 @@ class Scraper:
             l = driver.find_element_by_xpath('//img')
             file.write(l.screenshot_as_png)
 
-        driver.close()
         driver.quit()
 
     @staticmethod

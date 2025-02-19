@@ -102,7 +102,7 @@ class Ui_MainWindow(object):
     def __do_lineup(self, team: Team, sport: Sport, tableWidget: QtWidgets.QTableWidget, label: QtWidgets.QLabel):
 
         def get_nationality_for_image(nationality: str):
-            if not len(nationality.split(' ')):
+            if not nationality.split(' '):
                 return nationality.lower()
             else:
                 return nationality.replace(' ', '-').lower()
@@ -116,7 +116,7 @@ class Ui_MainWindow(object):
         # set rows
         count_rows = len(team.players) + 1
         index_new_players = count_rows
-        if len(team.new_players):
+        if team.new_players:
             count_rows += len(team.new_players) + 2
         index_empty_row_best_players = consts.INTERFACE_THE_BEST_PLAYERS_COUNT_FOOTBALL if sport == Sport.football \
                                         else consts.INTERFACE_THE_BEST_PLAYERS_COUNT_HOCKEY
@@ -158,7 +158,7 @@ class Ui_MainWindow(object):
                 j += 1
             for i in range(0, COUNT_COLUMN):
                 if not i:
-                    value = player.number if player.number != None else ''
+                    value = player.number if player.number is not None else ''
                 elif i == 1:
                     tableWidget.setCellWidget(j, i, QtWidgets.QLabel(f'<a href="{player.url}">{player.name}</a>',
                                                                           openExternalLinks=True))
@@ -169,7 +169,7 @@ class Ui_MainWindow(object):
                     tableWidget.setCellWidget(j, i, QtWidgets.QLabel(tags))
                     continue
                 elif i == 3:
-                    value = player.age if player.age != None else '?'
+                    value = player.age if player.age is not None else '?'
                 elif i == 4:
                     value = player.position.value
                 elif i == 5:
@@ -258,7 +258,7 @@ class Ui_MainWindow(object):
                 msg.setWindowIcon(QtGui.QIcon('Flags/icon_1.ico'))
                 msg.exec_()
             else:
-                if match is None or not (len(match.team_a.players) or len(match.team_b.players)):
+                if match is None or not (match.team_a.players or match.team_b.players):
                     if match is None:
                         message = consts.ERROR_WRONG_SPORT
                     else:
