@@ -59,8 +59,10 @@ class Scraper:
         driver.get(url_lineups)
         driver.implicitly_wait(10)
 
+        nav_sport_tournament = driver.find_element_by_xpath('//ol[contains(@class, "wcl-breadcrumbList")]')
+
         # get sport
-        sport_name = str(driver.find_element_by_xpath('//span[@class="tournamentHeader__sportNav"]/a').text).lower().\
+        sport_name = str(nav_sport_tournament.find_element_by_xpath('.//li[1]/a/span').text).lower().\
             capitalize()
         if sport_name == Sport.football.value:
             sport = Sport.football
@@ -72,7 +74,7 @@ class Scraper:
             return None
 
         # get tournament name
-        tournament_name = driver.find_element_by_xpath('//span[@class="tournamentHeader__country"]').text
+        tournament_name = str(nav_sport_tournament.find_element_by_xpath('.//li[2]/a/span').text).lower().capitalize()
 
         # get boxes with lineups
         boxes_lineups = driver.find_elements_by_xpath('//div[@class="lf__lineUp"]/div[@class="section"]')
