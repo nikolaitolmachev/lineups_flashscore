@@ -1,5 +1,6 @@
 FLASHSCORE_MAIN = 'https://www.flashscore.com/match/'
 FLASHSCORE_SUFFIX_FOR_LINEUPS = '/match-summary/lineups/0'
+FLASHSCORE_SUFFIX_FOR_LINEUPS_NEW ='summary/lineups/'
 FLASHSCORE_SQUAD = 'squad/'
 FLASHSCORE_RESULTS = 'results/'
 

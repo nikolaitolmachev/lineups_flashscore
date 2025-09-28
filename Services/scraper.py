@@ -1,11 +1,38 @@
-import selenium.webdriver.remote.webelement
-from Entities.match import Match, Team, Sport
-from Entities.player import Player, Position, IHGoalkeeper, Squad
-import Services.consts as consts, configparser, time, os, shutil, requests
-
+import configparser
+import time
+import os
+import shutil
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+
+import Services.consts as consts
+from Entities.match import Match, Team, Sport
+from Entities.player import Player, Position, IHGoalkeeper, Squad
+
+
+def clean_url_new_style(url: str) -> str:
+    """Remove query parameters and the 'summary' segment from a URL if present."""
+
+    # Remove query parameters by splitting at the first '?' and taking the part before it
+    url_no_params = url.split('?')[0]
+
+    # Split the URL path into segments by '/'
+    parts = url_no_params.split('/')
+
+    # If 'summary' segment exists, remove it and everything after
+    if 'summary' in parts:
+        index = parts.index('summary')
+        cleaned_url = '/'.join(parts[:index]) + '/'
+    else:
+        cleaned_url = url_no_params
+
+    return cleaned_url
+
 
 class Scraper:
     """
@@ -52,7 +79,11 @@ class Scraper:
         match = None
 
         # get a URL for lineups of match
-        url_lineups = url.split('#')[0] + '#' + consts.FLASHSCORE_SUFFIX_FOR_LINEUPS
+
+        # OLD VERSION
+        # url_lineups = url.split('#')[0] + '#' + consts.FLASHSCORE_SUFFIX_FOR_LINEUPS
+        # NEW VERSION
+        url_lineups = clean_url_new_style(url) + consts.FLASHSCORE_SUFFIX_FOR_LINEUPS_NEW
 
         # get a web-page with lineups
         driver = Scraper.__create_driver()
@@ -118,40 +149,83 @@ class Scraper:
         return match
 
     @staticmethod
-    def __get_players(element: selenium.webdriver.remote.webelement.WebElement) -> list:
+    def __get_players(driver: webdriver.Chrome, elements: list) -> list:
         """
         Gets list of players from web-element. Using to get an information about lineup.
 
-        :param element: web-element.
-        :return: list of players from web-element.
+        :param driver: ChromeDriver of a match for which driving the browser at the moment.
+        :param elements: list of web-elements.
+        :return: list of players from web-elements.
         """
+        def clean_player_name(name: str) -> str:
+            name = name.replace('(G)', '').replace('(C)', '').replace('(A)', '').strip()
+            if name.endswith('.'):
+                name = name[:-1]
+            return name
+
+        def append_player(players_list, name, url=None):
+            if url and not url.endswith('/'):
+                url += '/'
+            if url:
+                players_list.append(Player(name, url, None, None, None, None, None, None))
+            else:
+                players_list.append(name)
 
         players = []
-        for row in element:
-            try:
-                name = str(row.find_element_by_xpath('.//a').text)
-                url = row.find_element_by_xpath('.//a').get_attribute('href')
 
-                name = name.replace('(G)', '').replace('(C)', '').replace('(A)', '').strip()
-                if name[-1] == '.':
-                    name = name[:-1]
+        driver.implicitly_wait(1.5)
+        new_style = bool(elements and elements[0].find_elements_by_xpath('.//button'))
 
+        for element in elements:
+            if new_style:
                 try:
-                    if url[-1] != '/':
-                        url += '/'
-                except IndexError:
-                    players.append(name)
-                else:
-                    player = Player(name, url, None, None, None, None, None, None)
-                    players.append(player)
+                    # New style with button of player profile (actualy for football)
+                    button = element.find_element_by_xpath('.//button')
+                    name = element.find_element_by_xpath('.//button/strong').text
+                    name = clean_player_name(name)
 
-            except NoSuchElementException:
-                try:
-                    name = str(row.find_element_by_xpath('./div[3]').text).replace('(G)', '')\
-                        .replace('(C)', '').replace('(A)', '').strip()
-                    players.append(name)
+                    driver.execute_script("arguments[0].scrollIntoView(true);", button)
+                    driver.execute_script("arguments[0].click();", button)
+
+                    widget = WebDriverWait(driver, 10).until(
+                                EC.presence_of_element_located((
+                                    By.XPATH,
+                                    '//div[@data-analytics-context="widget-player-match-stats-card"]'
+                                ))
+                            )
+
+                    url = widget.find_element_by_xpath('.//div/a').get_attribute('href')
+                    append_player(players, name, url)
+
+                    button_close = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((
+                            By.XPATH,
+                            '//button[@data-testid="wcl-dialogCloseButton"]'
+                        ))
+                    )
+                    driver.execute_script("arguments[0].scrollIntoView(true);", button_close)
+                    driver.execute_script("arguments[0].click();", button_close)
+
                 except NoSuchElementException:
                     continue
+
+            else:
+                # Old style (actually for hockey)
+                try:
+                    a_tag = element.find_element_by_xpath('.//a')
+                    name = a_tag.text
+                    url = a_tag.get_attribute('href')
+
+                    name = clean_player_name(name)
+                    append_player(players, name, url)
+
+                except NoSuchElementException:
+                    try:
+                        name = element.find_element_by_xpath('./div[3]').text
+                        name = clean_player_name(name)
+                        players.append(name)
+                    except NoSuchElementException:
+                        continue
         return players
 
     @staticmethod
@@ -176,18 +250,18 @@ class Scraper:
                 sides = section.find_elements_by_xpath('./div[@class="lf__sidesBox"]/div/div[@class="lf__side"]')
 
                 # get for home
-                team_a_xi.extend(Scraper.__get_players(sides[0].find_elements_by_xpath('./div')))
+                team_a_xi.extend(Scraper.__get_players(driver, sides[0].find_elements_by_xpath('./div')))
                 # get for away
-                team_b_xi.extend(Scraper.__get_players(sides[1].find_elements_by_xpath('./div')))
+                team_b_xi.extend(Scraper.__get_players(driver, sides[1].find_elements_by_xpath('./div')))
 
             # on sub
             elif section_description in consts.LINEUPS_DESCRIPTIONS_SUB:
                 sides = section.find_elements_by_xpath('./div[@class="lf__sidesBox"]/div/div[@class="lf__side"]')
 
                 # get for home
-                team_a_sub.extend(Scraper.__get_players(sides[0].find_elements_by_xpath('./div')))
+                team_a_sub.extend(Scraper.__get_players(driver, sides[0].find_elements_by_xpath('./div')))
                 # get for away
-                team_b_sub.extend(Scraper.__get_players(sides[1].find_elements_by_xpath('./div')))
+                team_b_sub.extend(Scraper.__get_players(driver, sides[1].find_elements_by_xpath('./div')))
 
         team_a_info = (team_a_xi, team_a_sub)
         team_b_info = (team_b_xi, team_b_sub)
@@ -219,15 +293,20 @@ class Scraper:
             last_matches = driver.find_elements_by_xpath('//div[contains(@class, "leagues--static event--leagues")]/div')
 
         for lm in last_matches:
-            url_lm = lm.get_attribute('id').split('_')[-1]
-            if not url_lm:
+            match_id = lm.get_attribute('id').split('_')[-1]
+            if not match_id:
                 continue
-            else:
-                url_lm = consts.FLASHSCORE_MAIN + lm.get_attribute('id').split('_')[-1] + '/#' \
-                         + consts.FLASHSCORE_SUFFIX_FOR_LINEUPS
-                last_match_players = Scraper.__get_lineup_for_team(url_lm, team_name)
-                if last_match_players is not None:
-                    break
+
+            # OLD VERSION
+            # url_lm = consts.FLASHSCORE_MAIN + lm.get_attribute('id').split('_')[-1] + '/#' \
+            #         + consts.FLASHSCORE_SUFFIX_FOR_LINEUPS
+            # NEW VERSION
+            url_lm = lm.find_element_by_xpath('.//a').get_attribute('href')
+            url_lm = clean_url_new_style(url_lm) + consts.FLASHSCORE_SUFFIX_FOR_LINEUPS_NEW
+
+            last_match_players = Scraper.__get_lineup_for_team(url_lm, team_name)
+            if last_match_players and last_match_players[0] and last_match_players[1]:
+                break
 
         driver.quit()
 
@@ -268,13 +347,13 @@ class Scraper:
                 if section_description in consts.LINEUPS_DESCRIPTIONS_XI:
                     sides = section.find_elements_by_xpath('./div[@class="lf__sidesBox"]/div/div[@class="lf__side"]')
                     # get players
-                    team_xi.extend(Scraper.__get_players(sides[index].find_elements_by_xpath('./div')))
+                    team_xi.extend(Scraper.__get_players(driver, sides[index].find_elements_by_xpath('./div')))
 
                 # on sub
                 elif section_description in consts.LINEUPS_DESCRIPTIONS_SUB:
                     sides = section.find_elements_by_xpath('./div[@class="lf__sidesBox"]/div/div[@class="lf__side"]')
                     # get players
-                    team_sub.extend(Scraper.__get_players(sides[index].find_elements_by_xpath('./div')))
+                    team_sub.extend(Scraper.__get_players(driver, sides[index].find_elements_by_xpath('./div')))
 
             return (team_xi, team_sub)
         except NoSuchElementException:
